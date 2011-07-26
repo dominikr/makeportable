@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+#works with bash, mksh, ksh93 at the moment
+
 
 set -e
 FILE=$1
@@ -12,7 +15,7 @@ while true; do
 	tmpf="/tmp/block.$$"
 	dd if="${FILE}" count=1 skip=$num of=${tmpf} 2>/dev/null
 	
-	name=`dd if=${tmpf} bs=99 count=1 2>/dev/null`
+	name=`dd if=${tmpf} bs=99 count=1 2>/dev/null | tr -d '\0'`
  	options=`dd if=${tmpf} bs=1 skip=103 count=157 2>/dev/null | tr -d '\0'`
 	mode=${options:0:4}
 	fullblock=${options:17:9}
@@ -26,21 +29,20 @@ while true; do
 	fi
 
 	blocks=$(( 8#$fullblock ))
-
-	if [ "x$restblock" != "x000" ]; then
-		reminder=$(( 8#$restblock ))
-		rest=1
-	else
-		reminder=0
-		rest=0
-	fi
-
-
+	
 	num2=$(( $num + 1 ))
 	foo=$(( $num2 + $blocks ))	
 
 
-	if `echo "$name" | grep '/$' > /dev/null`; then
+	if [ "x$restblock" != "x000" ]; then
+		reminder=$(( 8#$restblock ))
+		num=$(( $foo + 1 ))
+	else
+		reminder=0
+		num=$foo
+	fi
+
+	if [ "x${name: -1}" = "x/" ]; then
 		mkdir -p $name
 	else
 
@@ -60,7 +62,6 @@ while true; do
 
 	fi
 
-	num=$(( $foo + $rest ))
 	echo $name
 
 done
